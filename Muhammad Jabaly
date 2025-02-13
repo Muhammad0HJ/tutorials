@@ -1,0 +1,81 @@
+الدرس 12
+
+مقدمة إلى PyMatGen
+
+PyMatGen (Python Materials Genomics) هو أحد أهم الأدوات البرمجية المستخدمة في مجال علوم المواد، وهو أحد الأدوات الأساسية المستخدمة في مشروع Materials Project. يمكن الوصول إلى الموقع الرسمي لـ PyMatGen عبر الرابط التالي، حيث تتوفر تمارين ودروس تعليمية خاصة به.
+
+الموقع الرسمي لـ PyMatGen
+
+تثبيت PyMatGen
+
+يمكن تثبيت PyMatGen على جهاز Mac أو على عنقود POWER بعد تفعيل بيئة mamba. لتنفيذ ذلك، استخدم الأمر التالي:
+```bash
+mamba install pymatgen
+
+قد يستغرق التثبيت بعض الوقت حسب سرعة الاتصال والموارد المتاحة.
+
+التحقق من عمل PyMatGen
+
+لنبدأ بمثال بسيط للتحقق مما إذا كان PyMatGen يعمل بشكل صحيح. الكود التالي يقوم بإرجاع رمز التناظر العالمي Hermann Mauguin لرقم التناظر الدولي المحدد (في هذه الحالة الرقم 10):
+```bash
+from pymatgen.symmetry.groups import SpaceGroup
+
+symmetrynumber = 10
+
+print(SpaceGroup.from_int_number(symmetrynumber).symbol)
+
+إذا عمل هذا الكود بنجاح، يمكننا تجربة مثال أكثر تعقيدًا لاسترجاع رموز التناظر لكل أرقام التناظر الممكنة (1 إلى 230):
+```bash
+from pymatgen.symmetry.groups import SpaceGroup
+
+for sg_num in range(1, 231):
+    sg = SpaceGroup.from_int_number(sg_num)
+    sg_symbol = sg.symbol
+    print(SpaceGroup(sg_symbol))
+
+مقارنة البنى البلورية (Comparing Structures)
+
+مقارنة البنية البلورية الخاصة بك مع بنى معروفة مسبقًا طريقة فعالة للتحقق من دقة النتائج.
+
+مقارنة التركيب الكيميائي والبنية البلورية
+
+يمكن استخدام PyMatGen لمقارنة البنية الذرية والأنواع الكيميائية للعناصر بين مادتين باستخدام الكود التالي:
+```bash
+from pymatgen.core import Structure
+from pymatgen.analysis.structure_matcher import StructureMatcher
+
+structure1 = Structure.from_file("path/to/file/my_structure.cif")
+structure2 = Structure.from_file("path/to/file/target_structure.cif")
+
+matcher = StructureMatcher()
+
+print(matcher.fit(structure1, structure2))
+
+إذا كانت البنيتان متطابقتين، فسيُعيد الكود True، وإلا فسيُعيد False.
+
+المعاملات الرئيسية في StructureMatcher
+
+المعامل	الوظيفة
+ltol	نسبة التسامح في الطول البلوري. القيمة الافتراضية 0.2.
+stol	نسبة التسامح في المواقع الذرية، محسوبة كـ 𝑉/𝑁 ^(1/3). القيمة الافتراضية 0.3.
+angle_tol	التسامح الزاوي بالدرجات. القيمة الافتراضية 5 درجات.
+
+مقارنة الهياكل دون الاهتمام بالعناصر الكيميائية
+
+في بعض الحالات، قد يكون من المفيد مقارنة البنية البلورية بغض النظر عن نوع الذرات الموجودة. يمكن تحقيق ذلك باستخدام Framework Comparator كما في المثال التالي:
+```bash
+from pymatgen.core import Structure
+from pymatgen.analysis.structure_matcher import StructureMatcher, FrameworkComparator
+
+diamond = Structure.from_file("path/to/file/diamond.cif")
+silicon = Structure.from_file("path/to/file/Si.cif")
+
+matcher = StructureMatcher(comparator=FrameworkComparator())
+
+print(matcher.fit(diamond, silicon))
+
+في هذه الحالة، سيُعيد True لأن البنية البلورية للألماس والسيليكون متماثلة على مستوى الهيكل البلوري (framework).
+
+الخطوة التالية
+
+الآن، لديك PyMatGen يعمل على كل من جهاز Mac وعنقود POWER. يمكنك الآن الانتقال إلى الدرس 13 لاستكشاف المزيد من الأدوات المتقدمة في تحليل المواد.
