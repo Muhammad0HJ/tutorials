@@ -1,0 +1,214 @@
+الدرس 13
+
+مقدمة إلى USPEX
+
+USPEX هو برنامج يُستخدم لتوقع البنية البلورية للمواد غير المكتشفة بعد.
+
+إعداد بيئة USPEX
+
+1. التأكد من الإعدادات الأساسية
+
+يعتمد USPEX على عدة أدوات أخرى لإجراء الحسابات، وأهمها VASP. لذا تأكد من أنك أكملت الدرس 8 بنجاح وأن VASP مثبت ويعمل لديك.
+
+2. إعداد ملفات التهيئة (.bashrc و .bash_profile)
+
+- هناك ملف مخفي في دليل المستخدم الخاص بك يتم تحميله عند تسجيل الدخول، ويُسمى .bashrc.
+- يمكنك استخدامه لتحديد المسارات وإضافة أوامر التشغيل التلقائي عند تسجيل الدخول.
+
+إذا لم يكن لديك ملف .bashrc، يمكنك إنشاؤه بنفسك.
+
+كما ستحتاج إلى إنشاء ملف .bash_profile يحتوي على السطور التالية:
+```bash
+# .bash_profile
+
+# تحميل الأوامر والوظائف
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
+
+# تحديد المسارات
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+export PATH
+
+إضافة المسارات الخاصة بـ USPEX إلى .bashrc
+
+أضف الأسطر التالية إلى نهاية ملف .bashrc:
+```bash
+#### ------------- USPEX v.10.5.0 ------------- ####
+export MCRROOT=/leeburton-data/
+export PATH=/leeburton-data/application/archive/:$PATH
+export USPEXPATH=/leeburton-data/application/archive/src
+### ------------------------------------------ ###
+
+تشغيل USPEX لمثال بسيط
+
+1. تشغيل جلسة TMUX
+
+لضمان استمرار تشغيل USPEX حتى بعد تسجيل الخروج، افتح جلسة TMUX باستخدام:
+```bash
+tmux
+
+2. تفعيل بيئة Mamba
+```bash
+mamba activate default
+
+3. إنشاء مجلد وتشغيل مثال USPEX
+```bash
+mkdir uspex
+cd uspex
+USPEX -c 01
+
+- هذا الأمر سينشئ مجموعة من الملفات داخل المجلد الحالي. يمكنك مراجعة موقع USPEX لفهم دور كل ملف.
+
+تعديل الإعدادات قبل تشغيل USPEX
+
+- يجب تعديل بعض الملفات قبل تشغيل الحسابات على عنقود POWER.
+
+1. تعديل ملف submitJob_local.py داخل مجلد Submission
+
+ابحث عن الجزء التالي في الملف:
+```bash
+myrun_content = '''#!/bin/sh
+#SBATCH -p lenovo
+#SBATCH -t 06:00:00
+#SBATCH -N 1
+#SBATCH -n 8
+#SBATCH -J {}
+#SBATCH -o log.output
+#SBATCH -e log.error
+
+module load intel/mkl-11.2.3 vasp/vasp-5.4.4 mpi/impi-5.0.3
+env
+
+ثم استبدله بالكود التالي لتناسب إعدادات عنقود POWER:
+```bash
+myrun_content = '''#!/bin/sh -l
+#
+# filename: slurm_script
+#SBATCH -p power-leeburton
+#SBATCH --account=power-leeburton-users
+#SBATCH -J {} 
+#SBATCH --time=04:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --mem=120GB
+{}
+
+2. تعديل ملف INPUT.txt
+
+ابحث عن الجزء التالي:
+```bash
+% commandExecutable
+mpirun vasp_std > log
+% EndExecutable
+
+واستبدله بـ:
+```bash
+% commandExecutable
+module load intel/rocky8-oneAPI-2023;module load vasp/rocky8-intel-6.4.1; mpirun vasp_std > output
+% EndExecutable
+
+3. تشغيل USPEX
+
+بعد التعديلات، شغل USPEX باستخدام:
+```bash
+./EX01-3D_Si_vasp.sh
+
+- لمراقبة الوظائف المرسلة إلى SLURM:
+```bash
+squeue
+
+- لفصل جلسة TMUX وترك المهمة تعمل في الخلفية:
+```bash
+Ctrl+b %ثم/ d
+
+- بعد انتهاء المهمة، يجب أن يظهر الملف USPEX_IS_DONE في دليل العمل، مما يشير إلى اكتمال الحسابات.
+
+مطابقة النتائج باستخدام PyMatGen
+
+بعد اكتمال حسابات USPEX، قد ترغب في مقارنة البنية الناتجة بالبنية الموجودة في الأدبيات العلمية. يمكن القيام بذلك باستخدام مكتبة PyMatGen.
+
+كود Python لمقارنة النتائج
+```bash
+from pymatgen.core import Structure
+from pymatgen.analysis.structure_matcher import StructureMatcher
+from pymatgen.io.vasp import Poscar
+
+# تحميل بنية من ملف POSCAR
+poscar = Poscar.from_file(r'/Users/nadav/Documents/masters/uspex_results/Si_NaCl_PbTiO3_same_INCAR/NaCl/_final.vasp')
+structure2 = '/Users/nadav/Documents/masters/uspex_results/Si_NaCl_PbTiO3_same_INCAR/PbTiO3/TiPbO3.cif'
+
+structure1 = poscar.structure
+structure2 = Structure.from_file(structure2)
+
+# تعيين معايير المطابقة
+ltol = 0.2
+stol = 0.3
+angle_tol = 5
+
+# تنفيذ المطابقة
+matcher = StructureMatcher(ltol=ltol, stol=stol, angle_tol=angle_tol)
+are_same = matcher.fit(structure1, structure2)
+
+# طباعة النتيجة
+print(are_same)
+print("البنيتان متطابقتان." if are_same else "البنيتان مختلفتان.")
+
+إعداد USPEX لحسابات جديدة
+
+إذا كنت ترغب في تجربة حسابات جديدة لنظام آخر، ستحتاج إلى تحديد العناصر الكيميائية ونسبها داخل ملف INPUT.txt، بالإضافة إلى التأكد من وجود ملفات POTCAR المناسبة.
+
+مثال على تعريف العناصر ونسبها في INPUT.txt
+```bash
+% atomType
+Si O
+% EndAtomType
+
+% numSpecies
+8 16
+% EndNumSpecies
+
+إعداد عدد دورات تشغيل VASP في INPUT.txt
+```bash
+% abinitioCode
+1 1 1 1
+% ENDabinit
+
+- يجب أن يكون هناك 4 ملفات INCAR، كل منها يزيد في دقة الحسابات تدريجيًا.
+
+إعداد المعلمات التطورية في INPUT.txt
+```bash
+******************************************
+*               POPULATION               *
+******************************************
+20    : populationSize
+30    : initialPopSize
+25    : numGenerations
+8     : stopCrit
+
+- يتم ضبط عدد البُنى لكل جيل على 20، مع حد أقصى 25 جيلًا.
+
+- يتم إيقاف التشغيل تلقائيًا إذا لم يتم العثور على بنية جديدة منخفضة الطاقة خلال 8 أجيال متتالية.
+
+إعداد خيارات التنويع (Variation Operators)
+```bash
+******************************************
+*          VARIATION OPERATORS           *
+******************************************
+0.50  : fracGene
+0.30  : fracRand
+0.20  : fracAtomsMut
+0.00  : fracLatMut
+0.00  : fracPerm 
+
+- يمكنك تعديل هذه القيم لاحقًا بعد فهم عمل USPEX بشكل أعمق.
+
+الخطوة الأخيرة: تشغيل الحسابات الجديدة
+```bash
+$ ./EX01-3D_Si_vasp.sh
+
+- بعد انتهاء الحسابات، ستجد الملف USPEX_IS_DONE في المجلد، مما يشير إلى اكتمال البحث.
+
+التهانينا!
+
+لقد أكملت جميع دروس BMD بنجاح! يمكنك الآن تطبيق معرفتك في البحث العلمي وتشغيل حسابات USPEX بكفاءة عالية.
