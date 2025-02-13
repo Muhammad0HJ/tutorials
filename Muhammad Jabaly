@@ -1,0 +1,172 @@
+```bash
+الدرس 9
+
+(قرية الشيخ مؤنس) العمل على الحاسوب الفائق لجامعة تل أبيب (TAU Supercomputer)
+
+تشغيل البرامج الطويلة على عنقود POWER باستخدام TMUX
+
+عادةً، تحتاج إلى الحفاظ على الاتصال بالعنقود لضمان استمرار تشغيل السكريبتات. ومع ذلك، مع ازدياد تعقيد الأكواد التي تعمل عليها، قد تجد أنها تستغرق وقتًا طويلاً لإنهاء التنفيذ، مما قد يكون محبطًا خصوصًا إذا حدث انقطاع عشوائي في اتصال VPN أو WiFi، مما يؤدي إلى توقف الكود واضطرارك إلى إعادة تشغيله.
+
+لحسن الحظ، يمكن تشغيل الأكواد في الخلفية على العنقود، بحيث يمكنك قطع الاتصال وتركها تعمل. هناك عدة طرق للقيام بذلك، ولكن الموصى بها لخادم POWER هي استخدام tmux.
+
+إنشاء جلسة جديدة باستخدام TMUX
+```bash
+tmux
+
+سيبدأ هذا الأمر جلسة جديدة مع نافذة طرفية فارغة.
+
+إغلاق الجلسة الحالية
+
+اضغط:
+```bash
+Ctrl+B ثم X
+
+سيُطلب منك تأكيد إنهاء الجلسة (y/n)، اضغط y للإغلاق.
+
+إنشاء جلسة جديدة باسم محدد
+```bash
+tmux new -s myname
+
+إنشاء نافذة جديدة في الجلسة الحالية
+```bash
+Ctrl+B ثم C
+
+التنقل بين النوافذ المفتوحة
+	•	التالي: Ctrl+B ثم n
+	•	السابق: Ctrl+B ثم p
+	•	نافذة برقم معين: Ctrl+B ثم رقم النافذة [0-9]
+
+فصل الجلسة عن الطرفية وتركها تعمل في الخلفية
+```bash
+Ctrl+B ثم D
+
+ستستمر جميع العمليات في الخلفية حتى تقوم بإعادة الاتصال بها.
+
+إعادة الاتصال بجلسة TMUX المنفصلة
+```bash
+tmux a -t myname
+
+عرض جميع الجلسات المفتوحة
+```bash
+tmux ls
+
+لمزيد من المعلومات حول tmux، يمكنك الرجوع إلى الدليل الرسمي.
+
+نظام إدارة المهام على عنقود POWER (SLURM)
+
+عند تشغيل مهام طويلة أو تستهلك موارد كبيرة، يتم استخدام نظام SLURM لإدارة موارد الحوسبة عالية الأداء (HPC) بشكل فعال، مما يضمن توزيع الموارد بعدالة بين المستخدمين.
+
+لتشغيل مهمة عبر SLURM، يجب أن يكون لديك ملف مهمة (job script).
+
+مثال على سكريبت SLURM لتشغيل برنامج بايثون على عنقود POWER
+```bash
+#!/bin/bash
+#SBATCH --partition=power-leeburton      # تحديد القسم المخصص
+#SBATCH --account=power-leeburton-users  # تحديد الحساب المستخدم
+#SBATCH --job-name=vasprun               # اسم المهمة
+#SBATCH --time=24:00:00                  # الحد الأقصى لمدة التشغيل (ساعات:دقائق:ثوانٍ)
+#SBATCH --nodes=1                        # عدد العقد
+#SBATCH --ntasks=1                       # عدد المهام
+#SBATCH --mem=40GB                       # الذاكرة المخصصة
+
+ulimit -s 81920
+
+# تشغيل المهمة
+python filename.py > output_file.out
+
+استبدل "filename.py" باسم ملف بايثون الخاص بك. ثم احفظ النص في ملف يسمى job.script وقم بإرساله باستخدام:
+```bash
+sbatch job.script
+
+ستجد نتائج التنفيذ في ملف output_file.out (يمكنك تغيير اسمه حسب الحاجة).
+
+شرح أهم الوسوم في SLURM
+
+الوسم	الوظيفة
+--partition	تحديد القسم المخصص للمجموعة البحثية.
+--account	تحديد حساب المستخدم إذا كان هناك أكثر من حساب متاح.
+--job-name	تعيين اسم للمهمة لتسهيل التعرف عليها في قائمة المهام.
+--time	تعيين الحد الأقصى لمدة التنفيذ (بحد أقصى 10 أيام).
+--nodes	تحديد عدد العقد التي سيتم تخصيصها للمهمة.
+--ntasks	تحديد عدد المهام/المعالجات المطلوبة للمهمة.
+--mem	تحديد كمية الذاكرة المخصصة لكل عقدة (بـ GB أو MB).
+
+خيارات إضافية:
+	•	--output → تحديد ملف الإخراج القياسي (stdout).
+	•	--error → تحديد ملف الإخراج للأخطاء (stderr).
+	•	--cpus-per-task → تحديد عدد نوى المعالجة لكل مهمة.
+	•	--mail-type → إرسال إشعارات عبر البريد الإلكتروني عند بدء المهمة، إنهائها، أو فشلها.
+	•	--dependency → تأخير المهمة حتى تنتهي مهمة أخرى معينة.
+
+تشغيل VASP على عنقود POWER باستخدام SLURM
+
+مثال على سكريبت تشغيل VASP باستخدام وحدة المعالجة المركزية (CPU)
+```bash
+#!/bin/bash
+#SBATCH --partition=power-leeburton      
+#SBATCH --account=power-leeburton-users  
+#SBATCH --job-name=vasprun               
+#SBATCH --time=72:00:00                  
+#SBATCH --nodes=1                        
+#SBATCH --ntasks=24                      
+#SBATCH --mem=120GB                       
+
+ulimit -s 81920
+
+# تحميل الوحدات المطلوبة
+module load intel/rocky8-oneAPI-2023
+module load vasp/rocky8-intel-6.4.1
+
+mpirun -n $SLURM_NTASKS vasp_std > output
+
+تشغيل VASP على GPU مع SLURM
+
+مفهوم تقسيم موارد GPU (MIGs)
+	•	يحتوي العنقود على 4 وحدات معالجة رسومية (GPUs).
+	•	لتشغيل أكثر من 4 مهام متوازية، يتم تقسيم الـ GPUs إلى وحدات أصغر (MIGs).
+	•	كل GPU مقسم إلى 7 وحدات MIGs، ولكل منها ذاكرة 10GB.
+	•	يمكن تشغيل عدد أكبر من المهام، ولكن كل مهمة ستحصل على موارد أقل لكل GPU.
+
+سكريبت تشغيل VASP على GPU
+```bash
+#!/bin/bash
+#SBATCH --partition=power-leeburton-gpu      
+#SBATCH --account=power-leeburton-users      
+#SBATCH --job-name=vasprun                   
+#SBATCH --time=04:00:00                      
+#SBATCH --ntasks=1                           
+##SBATCH --gres=gpu:1                        
+##SBATCH --gres=gpu:1g.10gb:1                
+#SBATCH --cpus-per-task=2                    
+#SBATCH --mem=16GB                           
+
+ulimit -s 81920
+
+# تحميل الوحدات المطلوبة
+module load vasp/vasp.6.4.1          
+echo $CUDA_VISIBLE_DEVICES                   
+
+export PATH=/powerapps/share/rocky9/openmpi-5.0.6/bin:$PATH
+export LD_LIBRARY_PATH=/powerapps/share/rocky9/openmpi-5.0.6/lib:$LD_LIBRARY_PATH
+
+export NCCL_P2P_LEVEL=PXB
+export OMP_NUM_THREADS=1
+export OMP_STACKSIZE=512m
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+mpirun -n $SLURM_NTASKS vasp_std > output
+
+ملاحظة هامة:
+	•	لاستخدام GPU بالكامل، قم بتفعيل السطر التالي:
+```bash
+#SBATCH --gres=gpu:1
+
+
+	•	لاستخدام GPU مقسم إلى MIGs، قم بتفعيل السطر التالي:
+```bash
+#SBATCH --gres=gpu:1g.10gb:1
+
+الخطوة التالية
+
+لقد تعلمت كيفية العمل على عنقود POWER في جامعة تل أبيب (قرية الشيخ مؤنس) باستخدام TMUX وSLURM. يمكنك الآن الانتقال إلى الدرس 10 لاستكشاف المزيد من الأدوات المتقدمة!
