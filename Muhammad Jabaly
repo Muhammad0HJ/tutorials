@@ -1,0 +1,97 @@
+الدرس 10
+
+البيئات الافتراضية في بايثون (Python Virtual Environments - PVE)
+
+يحتوي هذا الدرس على دليل إعداد لإنشاء بيئة بايثون افتراضية (PVE) على جهاز Mac الخاص بك وكذلك على عنقود POWER.
+
+إعداد بيئة بايثون افتراضية على جهاز Mac
+
+1. تثبيت Homebrew
+
+افتح الطرفية (Terminal) واستخدم الأمر التالي لتثبيت Homebrew:
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+بعد ذلك، سيُطلب منك إضافة بعض الأسطر الإضافية إلى PATH لضمان عمل Homebrew بشكل صحيح.
+
+ما هو Homebrew؟
+Homebrew هو مدير حزم يساعدك في تثبيت البرامج وإدارتها وتحديثها بسهولة عبر الطرفية.
+
+2. تثبيت gfortran باستخدام Homebrew
+```bash
+brew install gcc
+
+لماذا نحتاج gfortran؟
+سيكون مفيدًا لاحقًا لتشغيل العديد من الحزم العلمية في بايثون.
+
+3. تثبيت micromamba
+```bash
+brew install micromamba
+
+بعد اكتمال التثبيت، ستُطلب منك إضافة الملفات ذات الصلة إلى PATH. استخدم الأمر التالي:
+```bash
+/opt/homebrew/opt/micromamba/bin/micromamba shell init -s zsh -p ~/micromamba
+
+ما هو Micromamba؟
+هو مدير بيئات افتراضية لبايثون، يسمح لك بالعمل مع بايثون بشكل آمن ومعزول داخل بيئة محددة. وهو نفسه المستخدم في عنقود POWER.
+
+4. تسهيل استخدام mamba عبر alias
+
+لجعل استخدام micromamba أكثر سهولة، يمكنك إنشاء اختصار (alias) له بحيث يمكنك تشغيله باستخدام mamba فقط:
+	1.	افتح ملف .zprofile باستخدام vim:
+```bash
+vim ~/.zprofile
+
+
+	2.	أضف السطر التالي إلى نهاية الملف:
+```bash
+alias mamba="micromamba"
+
+
+الآن، يمكنك استخدام mamba بدلًا من micromamba عند تشغيل الأوامر.
+
+إعداد بيئة بايثون افتراضية على عنقود POWER
+
+1. تهيئة بيئة mamba على الخادم
+
+افتح ملف .bashrc وأضف السطر التالي إلى نهايته:
+```bash
+module load mamba > /dev/null
+
+ثم قم بتفعيل التغييرات باستخدام:
+```bash
+source .bashrc
+
+لماذا نستخدم mamba؟
+لأنه يسمح لك بإنشاء بيئة افتراضية خاصة بك داخل حسابك الشخصي على العنقود.
+
+إنشاء بيئة بايثون افتراضية
+
+1. إنشاء البيئة الافتراضية
+```bash
+mamba create --prefix /leeburton-data/<youraccountname>/envs/my_env python=3.8
+
+من المهم تحديد إصدار بايثون 3.8، وإلا فلن يعمل USPEX (سيتم التطرق إليه في الدرس التالي).
+
+2. تفعيل البيئة الافتراضية
+```bash
+mamba activate /bmd/<youraccountname>/envs/my_env
+
+عند تفعيل البيئة، سيتغير الجزء الأيسر من سطر الأوامر ليشير إلى أنك داخل بيئتك الافتراضية.
+
+3. تثبيت الحزم المطلوبة
+
+بعد تفعيل البيئة، قم بتثبيت الحزم الأساسية باستخدام الأوامر التالية:
+```bash
+mamba install spglib
+mamba install ase
+mamba install numpy
+mamba install scipy
+
+4. إلغاء تفعيل البيئة الافتراضية عند الانتهاء
+```bash
+mamba deactivate
+
+الخطوة التالية
+
+الآن، لديك بيئات افتراضية لبايثون تعمل على كل من جهاز Mac وعنقود POWER. يمكنك الآن الانتقال إلى الدرس 11 لاستكشاف المزيد من الأدوات المتقدمة!
